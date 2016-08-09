@@ -1,0 +1,30 @@
+{
+    "name": "toohamster/i-laravel",
+    "description": "Laravel ºÚ“◊ªØ",
+    "keywords": ["‘∆÷«ª€","php","laravel","≤÷ Û"],
+    "license": "MIT",
+    "homepage": "https://github.com/toohamster/i-laravel",
+    "support": {
+        "issues": "https://github.com/toohamster/i-laravel/issues",
+        "source": "https://github.com/toohamster/i-laravel"
+    },
+    "authors": [
+        {
+            "name": "toohamster",
+            "email": "449211678@qq.com"
+        }
+    ],
+    "require": {
+        
+    },
+    "require-dev": {
+        
+    },
+    "autoload": {
+        "classmap": [],
+        "files": [],
+        "psr-4": {"ILaravel\\": "src/ILaravel"}
+    },
+    "minimum-stability": "dev"
+}
+
