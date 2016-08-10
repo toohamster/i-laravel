@@ -19,7 +19,7 @@ class Controller extends \Illuminate\Routing\Controller
      */
     protected function getViewDir()
     {
-        return View::getViewDir();
+        return \View::getViewDir();
     }
 
     /**
