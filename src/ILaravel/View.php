@@ -1,22 +1,108 @@
-<?php namespace ILaravel\View;
+<?php namespace ILaravel;
 
 /**
- * 视图模版解析类
+ * 视图类
  */
-class Parser
+class View
+{
+
+    /**
+     * 视图文件所在目录
+     *
+     * @var string
+     */
+    public $view_dir;
+
+    /**
+     * 视图默认使用的布局
+     *
+     * @var string
+     */
+    public $view_layout;
+
+    /**
+     * 默认使用的视图
+     *
+     * @var string
+     */
+    public $viewname;
+
+    /**
+     * 视图变量
+     *
+     * @var array
+     */
+    public $vars;
+
+    /**
+     * 构造函数
+     *
+     * @param string $view_dir
+     * @param string $viewname
+     * @param array $vars
+     */
+    function __construct($view_dir, $viewname, array $vars)
+    {
+        $this->view_dir = $view_dir;
+        $this->vars = $vars;
+        $this->viewname = $viewname;
+    }
+
+    /**
+     * 渲染一个视图文件，返回结果
+     *
+     * @return string
+     */
+    function execute()
+    {
+        $viewname = $this->viewname;
+        $child = new ViewLayer($this, $viewname);
+
+        $error_reporting = ini_get('error_reporting');
+        error_reporting($error_reporting & ~E_NOTICE);
+        $child->parse();
+
+        $layer = $child;
+        while (($parent = $layer->parent) != null) {
+            $parent->parse($layer->blocks);
+            $layer = $parent;
+        }
+
+        error_reporting($error_reporting);
+        return $child->root()->contents;
+    }
+
+    /**
+     * 查找指定视图文件
+     *
+     * @param string $viewname
+     *
+     * @return string
+     */
+    function view_filename($viewname)
+    {
+        $filename = str_replace('.', DIRECTORY_SEPARATOR, $viewname) . '.php';
+        return $this->view_dir . DIRECTORY_SEPARATOR . $filename;
+    }
+}
+
+/**
+ * 视图层
+ */
+class ViewLayer
 {
     
     /**
      * 该层所属的视图对象
      *
-     * @var \ILaravel\View\Template
+     * @var \ILaravel\View
      */
     public $view;
 
     /**
      * 父层对象
      *
-     * @var \ILaravel\View\Parser
+     * @var \ILaravel\ViewLayer
      */
     public $parent;
 
@@ -58,10 +144,10 @@ class Parser
     /**
      * 构造函数
      *
-     * @param \ILaravel\View\Template $view
+     * @param \ILaravel\View $view
      * @param string $viewname
      */
-    function __construct(Template $view, $viewname)
+    function __construct(View $view, $viewname)
     {
         $this->view = $view;
         $this->viewname = $viewname;
@@ -70,7 +156,7 @@ class Parser
     /**
      * 返回该层的顶级层（最底层的视图）
      *
-     * @return \ILaravel\View\Parser
+     * @return \ILaravel\ViewLayer
      */
     function root()
     {
@@ -107,7 +193,7 @@ class Parser
      */
     function extend($viewname)
     {
-        $this->parent = new Parser($this->view, $viewname);
+        $this->parent = new ViewLayer($this->view, $viewname);
     }
 
     /**
@@ -156,6 +242,67 @@ class Parser
         include $__filename;
     }
 
+	/**
+	 * 分页
+	 *
+	 * @param  array $vars 		分页参数
+	 * @param  string $viewname 分页模版
+	 */
+	public function paging(array $vars = [], $viewname = 'ilaravel-paing')
+	{
+	    $defaults = [
+	        'total' => 0,
+	        'current_page' => Input::get('page', 1),
+	        'per_page' => 10,
+	        'pagelen' => 7,// 要显示的页码个数
+	        'url' => Request::fullUrl(), // 翻页的url
+	    ];
+
+	    $params = $vars + $defaults;
+	    if ($params['total'] < 1) return;
+
+	    $this->view->vars['_pager'] = $params;
+
+	    if ($viewname == 'ilaravel-paing')
+	    {
+	    	extract($this->view->vars);
+        	include __DIR__ . '/_data/view/paging.php';
+	    }
+	    else
+	    {
+	    	$this->element($viewname);
+	    }	    
+	}	
+
+	/**
+	 * 分页 url
+	 *
+	 * @param  string $url
+	 * @param  int $page
+	 * 
+	 * @return string
+	 */
+	public function page_url($url, $page=1)
+	{
+	    $pars = parse_url($url);
+	    if (!empty($pars)) {
+	        parse_str($pars['query'], $query);
+	        if (!is_array($query)) {
+	            $query = array();
+	        }
+	        $query['page'] = $page;
+	        $pars['query'] = http_build_query($query);
+
+	        $url = "{$pars['scheme']}://{$pars['host']}{$pars['path']}?{$pars['query']}";
+	        if (!empty($pars['fragment'])) {
+	            $url .= "#{$pars['fragment']}";
+	        }
+
+	        return $url;
+	    }
+	    return 'javascript:;';
+	}
+
     /**
      * 完成一个区块
      *
@@ -176,4 +323,5 @@ class Parser
         $this->blocks[$block_name] = $contents;
         echo "%_view_block.{$block_name}_%";
     }
+
 }

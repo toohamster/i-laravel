@@ -1,11 +1,11 @@
-<?php namespace ILaravel\View;
+<?php namespace ILaravel;
 
 use Illuminate\Support\ServiceProvider;
 
 /**
  * 视图服务提供器实现
  */
-class Provider extends ServiceProvider
+class ViewServiceProvider extends ServiceProvider
 {
 
 	/**
@@ -17,8 +17,13 @@ class Provider extends ServiceProvider
 	{
 		$this->app->bindShared('i-laravel.view', function($app)
 		{
-			$path = $app['path'] . '/views';
-			return new Env($path);
+			$view_dir = $app['config']['view.dir'];
+			if ( empty($view_dir) || !is_string($view_dir) )
+			{
+				$view_dir = $app['path'] . '/views';
+			}
+
+			return new ViewEnv($view_dir);
 		});
 	}
 
